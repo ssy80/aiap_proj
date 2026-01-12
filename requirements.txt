@@ -1,0 +1,13 @@
+pandas
+matplotlib
+sqlalchemy
+seaborn
+scipy
+datetime
+numpy
+statsmodels
+PyYAML
+scikit-learn
+xgboost
+pytest
+category_encoders

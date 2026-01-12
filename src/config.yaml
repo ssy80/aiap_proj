@@ -1,0 +1,158 @@
+data:
+  db_path: "data/phishing.db"
+  table_name: "phishing_data"
+  required_columns:
+    - "Unnamed: 0"
+    - "LineOfCode"
+    - "LargestLineLength"
+    - "NoOfURLRedirect"
+    - "NoOfSelfRedirect"
+    - "NoOfPopup"
+    - "NoOfiFrame"
+    - "NoOfImage"
+    - "NoOfSelfRef"
+    - "NoOfExternalRef"
+    - "Robots"
+    - "IsResponsive"
+    - "Industry"
+    - "HostingProvider"
+    - "DomainAgeMonths"
+    - "label"
+
+preprocessing:
+  test_size: 0.2
+  random_state: 42
+  impute_strategy: "median"        # "mean", "median"
+  column_mappings:
+    identifier:
+      unnamed: "Unnamed: 0"
+    target:
+      label: "label"
+    numerical:
+      line_of_code: "line_of_code"
+      largest_line_length: "largest_line_length"
+      no_of_url_redirect: "no_of_url_redirect"
+      no_of_self_redirect: "no_of_self_redirect"
+      no_of_popup: "no_of_popup"
+      no_of_iframe: "no_of_iframe"
+      no_of_image: "no_of_image"
+      no_of_self_ref: "no_of_self_ref"
+      no_of_external_ref: "no_of_external_ref"
+      is_robots: "is_robots"
+      is_responsive: "is_responsive"
+      domain_age_months: "domain_age_months"
+    categorical:
+      industry: "industry"
+      hosting_provider: "hosting_provider"
+
+training:
+  cv_folds: 5
+  scoring_metric: "f1"                    # "accuracy", "f1", "f1_macro", "precision", "recall", "roc_auc"
+  save_model: true
+  model_output_path: "models/trained_model.pkl"
+  tuning: false                                 # false=no tuning, run model, true=tune then run model
+  select_feature: false                         # false=use all features, true=use selectFromModel features
+  drop_feature: true                           # Drop features according to feature_selection -> drop_features
+  cross_validate: false                         # true=perform cross validation, false=skip cross validation
+
+feature_selection:
+  feature_selection_threshold: "median"           # "median", "mean"
+  features_to_drop:                               # Manual select features to drop
+    #- "remainder__domain_age_months"
+    #- "remainder__is_responsive"
+    #- "remainder__is_robots"
+    #- "one_hot__hosting_provider_000webhost"
+    #- "one_hot__hosting_provider_aws"
+    #- "one_hot__hosting_provider_azure"
+    #- "one_hot__hosting_provider_bluehost"
+    #- "one_hot__hosting_provider_dreamhost"
+    #- "one_hot__hosting_provider_freehostia"
+    #- "one_hot__hosting_provider_godaddy"
+    #- "one_hot__hosting_provider_google cloud"
+    #- "one_hot__hosting_provider_hostgator"
+    #- "one_hot__hosting_provider_hostinger"
+    #- "one_hot__hosting_provider_infinityfree"
+    #- "one_hot__hosting_provider_namecheap"
+    #- "one_hot__hosting_provider_unknown provider"
+    #- "one_hot__industry_banking"
+    #- "one_hot__industry_ecommerce"
+    #- "one_hot__industry_education"
+    #- "one_hot__industry_fashion"
+    #- "one_hot__industry_food"
+    #- "one_hot__industry_government"
+    #- "one_hot__industry_healthcare"
+    #- "one_hot__industry_manufacturing"
+    #- "one_hot__industry_non-profit"
+    #- "one_hot__industry_unknown"
+    #- "robust__no_of_self_ref"
+    - "robust__no_of_external_ref"
+    - "robust__no_of_iframe"
+    #- "robust__no_of_image"
+    - "robust__line_of_code"
+    - "robust__largest_line_length"
+    - "robust__no_of_popup"
+    - "remainder__no_of_url_redirect"
+    - "remainder__no_of_self_redirect"
+    #- "remainder__is_missing_line_of_code"
+    - "remainder__has_popup"
+    #- "remainder__has_iframe"
+    #- "remainder__has_image"
+
+
+tuning:
+  search_strategy: "random"                                 # "grid", "random"
+  n_iter: 20
+  n_jobs: -1
+  random_state: 42
+  hyperparameters:                                 # Hyperparameters parameter grid for tuning
+    random_forest:
+      n_estimators: [100, 200, 300, 400]
+      max_depth: [15, 20, 25, 30, null]
+      min_samples_split: [50, 100, 200]
+      min_samples_leaf: [25, 50, 100]
+      max_features: [0.3, 0.5, "sqrt", "log2"]
+    logistic_regression:
+      C: [0.1, 0.5, 1.0, 10.0]
+      max_iter: [2000]
+      penalty: ["l1", "l2"]
+      solver: ["liblinear", "saga"]
+    xgboost:
+      n_estimators: [50, 100, 200, 300]
+      max_depth: [3, 6, 9]
+      learning_rate: [0.01, 0.1, 0.2]
+      subsample: [0.8, 0.9, 1.0]
+
+
+# Optimized parameters for model training
+model:
+  algorithm: "xgboost"                # "random_forest", "logistic_regression", "xgboost"
+  hyperparameters:
+    random_forest:
+      n_estimators: 100
+      min_samples_split: 50
+      min_samples_leaf: 25
+      max_features: 0.3
+      max_depth: 25
+      random_state: 42
+    logistic_regression:
+      random_state: 42
+      solver: "liblinear"
+      penalty: "l1"
+      max_iter: 2000              
+      C: 10
+    xgboost:
+      random_state: 42
+      subsample: 0.8
+      n_estimators: 100
+      max_depth: 6
+      learning_rate: 0.1
+evaluation:
+  save_reports: true
+  reports_path: "reports/"
+  metrics:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1"
+    - "f1_macro"
+    - "roc_auc"
