@@ -21,3 +21,7 @@
 
     Merge main into your branch
         git merge main
+
+5) Untrack file from git
+    git rm --cached file.py
+
