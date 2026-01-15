@@ -10,6 +10,9 @@ import os
 from utils.helper import setup_logging, safe_get
 import logging
 
+from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import precision_recall_curve, average_precision_score
+import numpy as np
 
 class ModelEvaluator:
     """Evaluates a trained model and saves performance reports."""
@@ -74,6 +77,8 @@ class ModelEvaluator:
         save_reports = safe_get(self.config, 'evaluation', 'save_reports', required=True)
         if save_reports:
             self.save_evaluation_reports(metrics, cm, class_report, y_test, y_pred)
+            #self.save_roc_curve(y_test, y_pred_proba)
+            #self.save_pr_curve(y_test, y_pred_proba)
 
         return metrics, cm, class_report
 
@@ -107,3 +112,70 @@ class ModelEvaluator:
         plt.close()
 
         self.logger.info(f"Evaluation reports saved to {reports_path}")
+
+    def save_roc_curve(self, y_test, y_pred_proba):
+        """
+        Save ROC curve plot to file.
+
+        Args:
+            y_test (pd.Series): True test labels.
+            y_pred_proba (np.ndarray): Predicted probabilities.
+        """
+        reports_path = safe_get(self.config, 'evaluation', 'reports_path', required=True)
+        os.makedirs(reports_path, exist_ok=True)
+
+        # Compute ROC curve
+        fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba[:, 1])
+        roc_auc = auc(fpr, tpr)
+
+        # Plot
+        plt.figure()
+        plt.plot(fpr, tpr, label=f'ROC curve (AUC = {roc_auc:.4f})')
+        plt.plot([0, 1], [0, 1], linestyle='--')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC Curve')
+        plt.legend(loc='lower right')
+
+        # Save plot
+        plt.savefig(f"{reports_path}/roc_auc.png")
+        plt.close()
+
+    def save_pr_curve(self, y_test, y_pred_proba):
+        """
+        Save Precision-Recall curve plot to file.
+
+        Args:
+            y_test (pd.Series): True test labels.
+            y_pred_proba (np.ndarray): Predicted probabilities.
+        """
+        reports_path = safe_get(self.config, 'evaluation', 'reports_path', required=True)
+        os.makedirs(reports_path, exist_ok=True)
+
+        # Compute Precision-Recall curve
+        precision, recall, thresholds = precision_recall_curve(y_test, y_pred_proba[:, 1])
+        avg_precision = average_precision_score(y_test, y_pred_proba[:, 1])
+
+        f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+        best_idx = np.argmax(f1_scores)
+        best_threshold = thresholds[best_idx]
+        best_f1 = f1_scores[best_idx]
+        print(f"Best Threshold: {best_threshold:.4f}, Best F1 Score: {best_f1:.4f}")
+
+        '''target_precision = 0.95
+        valid = precision[:-1] >= target_precision
+        best_idx = np.argmax(recall[:-1][valid])
+        best_threshold = thresholds[valid][best_idx]
+        print(f"Threshold for Precision >= {target_precision}: {best_threshold:.4f}, Corresponding Recall: {recall[:-1][valid][best_idx]:.4f}")'''
+
+        # Plot
+        plt.figure()
+        plt.plot(recall, precision, label=f'Precision-Recall curve (AP = {avg_precision:.4f})')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall Curve')
+        plt.legend(loc='lower left')
+
+        # Save plot
+        plt.savefig(f"{reports_path}/precision_recall_curve.png")
+        plt.close()

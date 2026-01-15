@@ -1,0 +1,23 @@
+1) setup jupyter notebook   
+    ./setup_jupyter.sh
+
+2) start jupyter notebook
+    source venv/bin/activate
+    jupyter notebook
+
+3) git branching
+    git clone git@github.com:ssy80/aiap_proj.git
+    git checkout -b ssian_br1
+    git push -u origin ssian_br1
+    pull request and merge on github
+
+4 ) Merge main into your current feature branch
+        git fetch origin
+        git checkout main
+        git pull origin main
+
+    Switch back to your branch
+        git checkout ssian_br1
+
+    Merge main into your branch
+        git merge main

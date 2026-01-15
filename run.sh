@@ -12,7 +12,7 @@ source my_env/bin/activate
 pip install -r requirements.txt
 
 # Run pytest to execute tests
-#pytest
+pytest
 
 # Start the main program
 python3 src/main.py
