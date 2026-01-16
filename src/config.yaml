@@ -47,12 +47,12 @@ preprocessing:
 
 training:
   cv_folds: 5
-  scoring_metric: "f1"                    # "accuracy", "f1", "f1_macro", "precision", "recall", "roc_auc"
+  scoring_metric: "f1"                    # "accuracy", "f1", "precision", "recall", "roc_auc"
   save_model: true
   model_output_path: "models/trained_model.pkl"
-  tuning: true                                 # false=no tuning, run model, true=tune then run model
-  select_feature: true                         # false=use all features, true=use selectFromModel features
-  drop_feature: false                           # Drop features according to feature_selection -> drop_features
+  tuning: false                                 # false=no tuning, run model, true=tune then run model
+  select_feature: false                         # false=use all features, true=use selectFromModel features
+  drop_feature: true                           # Drop features according to feature_selection -> drop_features
   cross_validate: false                         # true=perform cross validation, false=skip cross validation
 
 feature_selection:
@@ -127,7 +127,7 @@ tuning:
 
 # Optimized parameters for model training
 model:
-  algorithm: "logistic_regression"                # "random_forest", "logistic_regression", "xgboost"
+  algorithm: "random_forest"                # "random_forest", "logistic_regression", "xgboost"
   hyperparameters:
     random_forest:
       n_estimators: 100
@@ -158,5 +158,5 @@ evaluation:
     - "precision"
     - "recall"
     - "f1"
-    - "f1_macro"
     - "roc_auc"
+    - "best_f1"

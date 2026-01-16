@@ -62,10 +62,18 @@ class ModelEvaluator:
             metrics['recall'] = recall_score(y_test, y_pred, average='weighted')
         if 'f1' in evaluation_metrics:
             metrics['f1'] = f1_score(y_test, y_pred, average='weighted')
-        if 'f1_macro' in evaluation_metrics:
-            metrics['f1_macro'] = f1_score(y_test, y_pred, average='macro')
         if 'roc_auc' in evaluation_metrics and y_pred_proba is not None:
             metrics['roc_auc'] = roc_auc_score(y_test, y_pred_proba[:, 1], multi_class='ovr')
+
+        # Compute best F1 score and threshold from Precision-Recall curve
+        if 'best_f1' in evaluation_metrics and y_pred_proba is not None:
+            precision, recall, thresholds = precision_recall_curve(y_test, y_pred_proba[:, 1])
+            f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+            best_idx = np.argmax(f1_scores)
+            best_threshold = thresholds[best_idx]
+            best_f1 = f1_scores[best_idx]
+            metrics['best_f1'] = best_f1
+            metrics['best_f1_threshold'] = best_threshold
 
         # Generate reports
         cm = confusion_matrix(y_test, y_pred)
@@ -79,6 +87,8 @@ class ModelEvaluator:
             self.save_evaluation_reports(metrics, cm, class_report, y_test, y_pred)
             #self.save_roc_curve(y_test, y_pred_proba)
             #self.save_pr_curve(y_test, y_pred_proba)
+            self.save_pr_curve_best_f1(y_test, y_pred_proba)
+            
 
         return metrics, cm, class_report
 
@@ -102,12 +112,21 @@ class ModelEvaluator:
         # Save classification report
         pd.DataFrame(class_report).transpose().to_csv(f"{reports_path}/classification_report.csv")
 
+        # transpose confusion matrix for better visualization
+        cm_t = cm.T
+        cm_final = cm_t[[1, 0]][:, [1, 0]]
+
         # Save confusion matrix plot
         plt.figure(figsize=(8, 6))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        sns.heatmap(
+            cm_final,
+            annot=True,
+            fmt='d',
+            cmap='Blues',
+            xticklabels=['Actual 1', 'Actual 0'],
+            yticklabels=['Predicted 1', 'Predicted 0']
+        )
         plt.title('Confusion Matrix')
-        plt.ylabel('True Label')
-        plt.xlabel('Predicted Label')
         plt.savefig(f"{reports_path}/confusion_matrix.png")
         plt.close()
 
@@ -178,4 +197,43 @@ class ModelEvaluator:
 
         # Save plot
         plt.savefig(f"{reports_path}/precision_recall_curve.png")
+        plt.close()
+
+
+    def save_pr_curve_best_f1(self, y_test, y_pred_proba):
+        """
+        Save Precision-Recall curve plot to file, highlighting best F1 score.
+        """
+        reports_path = safe_get(self.config, 'evaluation', 'reports_path', required=True)
+        os.makedirs(reports_path, exist_ok=True)
+
+        # Compute Precision-Recall curve
+        precision, recall, thresholds = precision_recall_curve(y_test, y_pred_proba[:, 1])
+
+        f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+        best_idx = np.argmax(f1_scores)
+        best_threshold = thresholds[best_idx]
+        best_f1 = f1_scores[best_idx]
+        best_precision = precision[best_idx]
+        best_recall = recall[best_idx]
+
+        # Plot
+        plt.figure()
+        plt.plot(recall, precision, label='Precision–Recall Curve')
+        # Best F1 point
+        plt.scatter(
+            best_recall,
+            best_precision,
+            s=120,
+            marker='o',
+            label=f'Best F1 = {best_f1:.3f}\nThreshold = {best_threshold:.3f}'
+        )
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision–Recall Curve with Best F1 Point')
+        plt.legend()
+        plt.grid(True)
+
+        # Save plot
+        plt.savefig(f"{reports_path}/pr_curve_best_f1.png")
         plt.close()

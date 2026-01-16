@@ -94,6 +94,10 @@ class MlPipeline:
             metrics, cm, class_report = evaluator.evaluate_model(model, X_test, y_test)
             scoring = safe_get(self.config, 'training', 'scoring_metric', required=True)
             self.logger.info(f"{scoring}: {metrics.get(scoring, 'N/A'):.4f}")
+            self.logger.info(f"best_{scoring}: {metrics.get(f'best_{scoring}', 'N/A')}")
+            self.logger.info(f"best_{scoring}_threshold: {metrics.get(f'best_{scoring}_threshold', 'N/A')}")
+            
+            
 
             # 5. Save
             self.logger.info("Step 5: Saving Model")
